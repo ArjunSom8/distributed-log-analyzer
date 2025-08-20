@@ -1,0 +1,73 @@
+# This is the main section where we define all the individual containers (services)
+# that will make up our application stack. In this case, we have two: zookeeper and kafka.
+services:
+  # This section defines the Zookeeper service.
+  # WHY: Kafka uses Zookeeper to manage its cluster state, including information about
+  # brokers, topics, and consumer offsets. It's a mandatory dependency for this version of Kafka.
+  zookeeper:
+    # This tells Docker which image to download from Docker Hub to create the container.
+    # We are using a specific version (7.0.1) from Confluent Inc, a company that specializes in Kafka.
+    # This ensures we have a reliable and compatible version of Zookeeper.
+    image: confluentinc/cp-zookeeper:7.0.1
+
+    # This gives our running container a fixed, human-readable name.
+    # This is useful for referencing it from other containers or commands.
+    container_name: zookeeper
+
+    # This section sets environment variables inside the Zookeeper container.
+    # These variables are used to configure the Zookeeper server when it starts.
+    environment:
+      # This tells Zookeeper which port to listen on for client connections (from Kafka).
+      ZOOKEEPER_CLIENT_PORT: 2181
+      # This is a fundamental unit of time in milliseconds used by Zookeeper for heartbeats.
+      ZOOKEEPER_TICK_TIME: 2000
+
+  # This section defines the Kafka service itself.
+  kafka:
+    # This tells Docker to use the Confluent Kafka image, matching the Zookeeper version for compatibility.
+    image: confluentinc/cp-kafka:7.0.1
+
+    # We give the Kafka container a fixed name as well.
+    container_name: kafka
+
+    # This section maps ports between your host machine (your Mac) and the container.
+    # This is crucial for allowing applications running on your Mac to talk to Kafka inside the container.
+    ports:
+      # Format is "HOST_PORT:CONTAINER_PORT"
+      # This exposes port 9092 from the Kafka container to port 9092 on your local machine.
+      # This is the standard port for Kafka clients.
+      - "9092:9092"
+
+    # This is a critical instruction. It tells Docker Compose to start and wait for the
+    # 'zookeeper' service to be running before it attempts to start this 'kafka' service.
+    # WHY: Kafka will fail to start if it cannot connect to Zookeeper.
+    depends_on:
+      - zookeeper
+
+    # This section sets environment variables to configure the Kafka broker inside the container.
+    environment:
+      # Every Kafka broker in a cluster needs a unique ID. Since we only have one, '1' is fine.
+      KAFKA_BROKER_ID: 1
+
+      # This tells the Kafka broker how to find and connect to Zookeeper.
+      # 'zookeeper:2181' uses Docker's internal networking to resolve the service name 'zookeeper'
+      # to the correct container's IP address on its listening port.
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+
+      # This defines the network listeners that Kafka will use. It's a map of names to protocol types.
+      # We define two listeners: one for external connections and one for internal (container-to-container) communication.
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+
+      # This is the most important (and often confusing) part of Kafka's Docker configuration.
+      # It tells clients *how* to connect to the broker, depending on where they are.
+      # - PLAINTEXT://localhost:9092: For clients outside the Docker network (like our Python script on your Mac).
+      # - PLAINTEXT_INTERNAL://kafka:29092: For clients inside the Docker network (if we had other containers).
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+
+      # For internal topics that Kafka creates (like storing consumer offsets), this sets the replication factor.
+      # Since we only have one broker, this MUST be set to 1, otherwise Kafka will fail to start.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+      # This is a performance setting that reduces the delay when a new consumer joins a group.
+      # It's useful for development to make things happen faster.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
