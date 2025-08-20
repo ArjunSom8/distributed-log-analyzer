@@ -1,0 +1,3 @@
+# services/log-consumer/requirements.txt
+kafka-python
+protobuf
