@@ -71,3 +71,27 @@ services:
       # This is a performance setting that reduces the delay when a new consumer joins a group.
       # It's useful for development to make things happen faster.
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  # --- NEW: Apache Flink Services ---
+
+  # The Flink JobManager is the master/coordinator of the Flink cluster.
+  # It receives jobs, schedules tasks, and manages checkpoints.
+  flink-jobmanager:
+    image: flink:1.14.5-scala_2.12
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081" # Exposes the Flink Web UI to our local machine
+    command: jobmanager # This command tells the container to start as a JobManager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+
+  # The Flink TaskManager is the worker node.
+  # It executes the actual data processing tasks assigned by the JobManager.
+  flink-taskmanager:
+    image: flink:1.14.5-scala_2.12
+    container_name: flink-taskmanager
+    depends_on:
+      - flink-jobmanager # Ensures the JobManager starts before the TaskManager
+    command: taskmanager # This command tells the container to start as a TaskManager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
