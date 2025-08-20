@@ -1,0 +1,3 @@
+# services/log-producer/requirements.txt
+kafka-python
+protobuf
