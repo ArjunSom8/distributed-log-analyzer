@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package loganalysis;
+
+import "google/protobuf/timestamp.proto";
+
+// Represents a single log entry in the system.
+message LogMessage {
+  // The time the event occurred.
+  google.protobuf.Timestamp timestamp = 1;
+
+  // The hostname or IP of the machine that generated the log.
+  string source_host = 2;
+
+  // The name of the service or application that generated the log.
+  string service_name = 3;
+
+  // The severity level of the log (e.g., "INFO", "WARN", "ERROR").
+  string level = 4;
+
+  // The actual log message content.
+  string message = 5;
+}
